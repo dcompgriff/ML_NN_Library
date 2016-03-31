@@ -13,8 +13,23 @@ import pandas as pd
 from NN_library import NNModel
 
 def buildSmallExampleNet():
+    # Build model.
     mModel = NNModel.Model()
-    print("Loaded Model")
+    mModel.add(layer_size=2, isInput=True)
+    mModel.add(layer_size=3)
+    mModel.add(layer_size=2)
+    print("Created Model.")
+
+    # Train model.
+
+    # Predict data.
+    testData = np.array([1, 1])
+    output = mModel.predict(testData)
+    print("Model output is: ")
+    print(output)
+
+
+
 
 def main():
     print("In main.")
