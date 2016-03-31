@@ -98,7 +98,7 @@ class Layer:
         # Reset values of output so that mem doesn't have to be allocated.
         for col in range(0, len(output)):
             # Set the output with dim (1 x H) values to the layer's output var with dims (H X 1)
-            self.output[col]
+            self.output[col] = output[col]
 
         return output
 
