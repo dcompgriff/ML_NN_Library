@@ -29,6 +29,16 @@ def buildSmallExampleNet():
     print("Model output is: ")
     print(output)
 
+    print("Saving model.")
+    NNModel.save(mModel, "temp_model.p")
+    print("Saved model.")
+    print("Load model.")
+    mModel2 = NNModel.load("temp_model.p")
+    print("Model loaded.")
+    output = mModel.predict(testData[0])
+    print("Model output is: ")
+    print(output)
+
 
 def main():
     print("In main.")

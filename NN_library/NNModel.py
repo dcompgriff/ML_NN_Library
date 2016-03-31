@@ -5,7 +5,7 @@ backpropagation with SGD and an activation of sigmoids is used.
 '''
 from functools import *
 import numpy as np
-import pickle
+import _pickle as pickle
 import math
 
 '''
@@ -107,7 +107,6 @@ class Layer:
         self.size = 0
         self.momentum = 0
         self.learning_rate = 0.1
-        self.activation_function = lambda num: 1.0 / (1.0 + math.exp(-1 * num))
 
     def setParams(self, input_size, size, momemtum=0, learning_rate=0.1, activation_function='sigmoid'):
         # Weight matrix. (# weights or inputs, # neurons). (k x H).
@@ -133,7 +132,7 @@ class Layer:
         # Apply sigmoid function, and reset values of output so that mem doesn't have to be allocated.
         for col in range(0, len(output)):
             # Set the output with dim (1 x H) values to the layer's output var with dims (H X 1)
-            output[col] = self.activation_function(output[col])
+            output[col] = 1.0 / (1.0 + math.exp(-1 * output[col]))
             # Set the output to the output term that will be used later in backprop.
             self.output[col] = output[col]*(1.0 - output[col])
 
@@ -178,16 +177,16 @@ class Layer:
 Save the model in the specified file path as a pickled object.
 '''
 def save(model, file_path):
-    f = open(file_path, 'w+')
-    pickle.dumps(model, file_path)
+    f = open(file_path, 'wb')
+    pickle.dump(model, f)
     f.close()
 
 '''
 Return the model saved in the specified pickled file.
 '''
 def load(file_path):
-    f = open(file_path, 'r+')
-    model = pickle.loads(f)
+    f = open(file_path, 'rb')
+    model = pickle.load(f)
     f.close()
     return model
 
