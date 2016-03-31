@@ -1,7 +1,12 @@
+'''
+This library has some parameters indicating the possibility of implementing backpropagation
+with alternate loss functions, activation functions, and optimizers. Currently, only
+backpropagation with SGD and an activation of sigmoids is used.
+'''
 from functools import *
 import numpy as np
 import pickle
-
+import math
 
 '''
 This class is used to build a neural network model.
@@ -31,10 +36,30 @@ class Model:
     '''
     Using the training set of data, run through each data example, and backpropogate the errors.
 
-    Note: Potentially backpropogate errors (Perform dot products) during training in parallel. In parallel for each level.
+    train_set: (m x k) numpy array with m examples of dimension k
+    label_set: (m x o) numpy array with m outputs of dimension o
     '''
-    def train(self, train_set, label_set):
-        pass
+    def train(self, train_set, label_set, epochs=1):
+        for epoch in epochs:
+            for train_index in len(train_set[:]):
+                '''
+                1) Predict current example.
+                2) Calculate error for last level.
+                3) For each level before last level:
+                    (In vector form)
+                    A) levelError = (levelOutput)*(1 - levelOutput)*(Sum of next level's weights * next level's errors)
+                    B) Calculate delta wji (With momentum)
+                    C) Update weight wji as wji(n) = wji(n-1) + delta wji
+                '''
+                prediction = self.predict(train_set[train_index])
+                # Calculate error term for every output neuron. Dims (1 x o)
+                error = (prediction)*(prediction)*(label_set[train_index] - prediction)
+                # Backpropogate errors for each layer.
+                for layer_index in range(len(self.layers), -1, -1):
+                    error = self.layers[layer_index].backpropogateErrors(error)
+                # Continue to next example.
+
+        print("Finished Training.")
 
     '''
     Generate an output prediction from the NN model using the training data and current network weights.
@@ -74,18 +99,23 @@ class Layer:
         # Each column represents the weights of a neuron. Column 0 are the input weights of neuron 0. Column 1 are the input weights
         # of neuron 1 and so on.
         self.input_weights = None
+        self.input_weight_deltas = None
         self.output = None
+        self.input = None
         self.size = 0
         self.momentum = 0
         self.learning_rate = 0.1
+        self.activation_function = lambda num: 1.0 / (1.0 + math.exp(-1 * num))
 
-    def setParams(self, input_size, size, momemtum=0, learning_rate=0.1):
+    def setParams(self, input_size, size, momemtum=0, learning_rate=0.1, activation_function='sigmoid'):
         # Weight matrix. (# weights or inputs, # neurons). (k x H).
         self.size = size
-        self.input_weights = np.ones((input_size, size))
+        self.input_weights = np.zeros((input_size, size))
+        self.input_weight_deltas = np.zeros((input_size, size))
         self.output = np.zeros((size, 1))
         self.momentum = momemtum
         self.learning_rate = learning_rate
+        # TODO: Potentially allow an activation function to be passed, or set using the activation function param.
 
     '''
     1) Do dot product of input (1xk) and weight matrix (kxH)
@@ -93,12 +123,17 @@ class Layer:
     3) Return output in the form or (1xH)
     '''
     def generateOutput(self, input):
-        # Generate output
+        # Set the input for the backprop to use later. (1 x k) vector.
+        # TODO: Make sure input isn't being changed by any other func.
+        self.input = input
+        # Generate output.
         output = np.dot(input, self.input_weights)
-        # Reset values of output so that mem doesn't have to be allocated.
+        # Apply sigmoid function, and reset values of output so that mem doesn't have to be allocated.
         for col in range(0, len(output)):
             # Set the output with dim (1 x H) values to the layer's output var with dims (H X 1)
-            self.output[col] = output[col]
+            output[col] = self.activation_function(output[col])
+            # Set the output to the output term that will be used later in backprop.
+            self.output[col] = output[col]*(1.0 - output[col])
 
         return output
 
@@ -115,9 +150,25 @@ class Layer:
     def getInputWeightsForNeuron(self, neuron):
         pass
 
-    def backpropogateErrors(self, e):
-        pass
+    '''
+    The error matrix is the transpose of the input matrix, with each column multiplied by the
+    error term for that output neuron. It has dims (1 x H)
+    '''
+    def backpropogateErrors(self, errorMat):
+        # Calculate the new delta's for this layer. It should be (H x 1) * (1 x H).T
+        error = self.output * errorMat.T
+        # Calculate the new weight deltas along with momentum. Make input of form (k x 1) and error of form (1 x H)
+        self.input_weight_deltas = (self.learning_rate * np.dot(self.input.T, error.T)) + (self.momentum*self.input_weight_deltas)
+        # Update the weights. input_weight_deltas should still be a (k x H) weight matrix.
+        self.input_weights = self.input_weights + self.input_weight_deltas
 
+        # Return the error.
+        return error
+
+    def generateErrorMat(self, error):
+        # Calculate the errorMat to use for backpropagation.
+        errorMat = np.dot(error, self.getInputWeights().T)
+        return errorMat
 '''
 Save the model in the specified file path as a pickled object.
 '''

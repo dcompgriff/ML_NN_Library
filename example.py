@@ -29,8 +29,6 @@ def buildSmallExampleNet():
     print(output)
 
 
-
-
 def main():
     print("In main.")
     buildSmallExampleNet()
