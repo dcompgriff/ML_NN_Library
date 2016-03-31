@@ -40,8 +40,8 @@ class Model:
     label_set: (m x o) numpy array with m outputs of dimension o
     '''
     def train(self, train_set, label_set, epochs=1):
-        for epoch in epochs:
-            for train_index in len(train_set[:]):
+        for epoch in range(0, epochs):
+            for train_index in range(0, len(train_set[:])):
                 '''
                 1) Predict current example.
                 2) Calculate error for last level.
@@ -53,10 +53,12 @@ class Model:
                 '''
                 prediction = self.predict(train_set[train_index])
                 # Calculate error term for every output neuron. Dims (1 x o)
-                error = (prediction)*(prediction)*(label_set[train_index] - prediction)
+                error = np.array([(prediction)*(prediction)*(label_set[train_index] - prediction)])
+                errorMat = error
                 # Backpropogate errors for each layer.
-                for layer_index in range(len(self.layers), -1, -1):
-                    error = self.layers[layer_index].backpropogateErrors(error)
+                for layer_index in range(len(self.layers) - 1, -1, -1):
+                    error = self.layers[layer_index].backpropogateErrors(errorMat)
+                    errorMat = self.layers[layer_index].generateErrorMat(error)
                 # Continue to next example.
 
         print("Finished Training.")
@@ -125,7 +127,7 @@ class Layer:
     def generateOutput(self, input):
         # Set the input for the backprop to use later. (1 x k) vector.
         # TODO: Make sure input isn't being changed by any other func.
-        self.input = input
+        self.input = np.array([input])
         # Generate output.
         output = np.dot(input, self.input_weights)
         # Apply sigmoid function, and reset values of output so that mem doesn't have to be allocated.
@@ -156,6 +158,9 @@ class Layer:
     '''
     def backpropogateErrors(self, errorMat):
         # Calculate the new delta's for this layer. It should be (H x 1) * (1 x H).T
+        # Note, these intermediate numpy arrays are necessary for the transpose operations to work.
+        # mErrorMat = errorMat.reshape((len(errorMat), 1))
+        #mInput = self.input.reshape((len(self.input), 1))
         error = self.output * errorMat.T
         # Calculate the new weight deltas along with momentum. Make input of form (k x 1) and error of form (1 x H)
         self.input_weight_deltas = (self.learning_rate * np.dot(self.input.T, error.T)) + (self.momentum*self.input_weight_deltas)
@@ -163,7 +168,7 @@ class Layer:
         self.input_weights = self.input_weights + self.input_weight_deltas
 
         # Return the error.
-        return error
+        return error.T
 
     def generateErrorMat(self, error):
         # Calculate the errorMat to use for backpropagation.

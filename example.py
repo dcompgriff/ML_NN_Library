@@ -15,16 +15,17 @@ from NN_library import NNModel
 def buildSmallExampleNet():
     # Build model.
     mModel = NNModel.Model()
-    mModel.add(layer_size=2, isInput=True)
-    mModel.add(layer_size=3)
-    mModel.add(layer_size=2)
+    mModel.add(layer_size=2, learning_rate=1, isInput=True)
+    mModel.add(layer_size=3, learning_rate=1, momentum_factor=.3)
+    mModel.add(layer_size=2, learning_rate=1, momentum_factor=.3)
     print("Created Model.")
 
     # Train model.
-
+    testData = np.array([[1,1]])
+    labelData = np.array([[1,0]])
+    mModel.train(testData, labelData, epochs=10000)
     # Predict data.
-    testData = np.array([1, 1])
-    output = mModel.predict(testData)
+    output = mModel.predict(testData[0])
     print("Model output is: ")
     print(output)
 
