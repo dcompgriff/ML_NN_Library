@@ -29,23 +29,36 @@ def buildSmallExampleNet():
     print("Model output is: ")
     print(output)
 
-    print("Saving model.")
-    NNModel.save(mModel, "temp_model.p")
-    print("Saved model.")
-    print("Load model.")
-    mModel2 = NNModel.load("temp_model.p")
-    print("Model loaded.")
-    output = mModel.predict(testData[0])
-    print("Model output is: ")
-    print(output)
+def labelToOneHotEncoding(labels):
+    uniqueValues = sorted(list(set(labels.T[0])))
+    newLabels = np.zeros((labels.shape[0], len(uniqueValues)))
+    for label_index in range(0, len(labels[:, 0])):
+        value_index = uniqueValues.index(labels[label_index, 0])
+        # Flip the bit corresponding to the position of the element. Values are encoded in descending order.
+        # Aka, smalles value is bit in first position, and largest value is bit in last position.
+        newLabels[label_index, value_index] = 1
+
+
+def runNetTrial():
+    # Build model.
+    mModel = NNModel.Model()
+    mModel.add(layer_size=2, learning_rate=.1, isInput=True)
+    mModel.add(layer_size=20, learning_rate=.1, momentum_factor=.3)
+    mModel.add(layer_size=2, learning_rate=.1, momentum_factor=.3)
+    print("Created Model.")
+
+    data = pd.read_table('./hw2_dataProblem.txt', sep=" +", engine='python')
+    labels = data["D"].values.reshape((300, 1))
+    train_set = data[['L','P']].values
 
 
 def main():
     print("In main.")
-    buildSmallExampleNet()
+    #buildSmallExampleNet()
+    runNetTrial()
 
 
 
-hey = 7
+
 if __name__ == "__main__":
     main()
