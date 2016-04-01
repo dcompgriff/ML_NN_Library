@@ -41,6 +41,7 @@ class Model:
     '''
     def train(self, train_set, label_set, epochs=1):
         for epoch in range(0, epochs):
+            print("Epoch: " + str(epoch))
             for train_index in range(0, len(train_set[:])):
                 '''
                 1) Predict current example.
@@ -53,7 +54,7 @@ class Model:
                 '''
                 prediction = self.predict(train_set[train_index])
                 # Calculate error term for every output neuron. Dims (1 x o)
-                error = np.array([(prediction)*(prediction)*(label_set[train_index] - prediction)])
+                error = np.array([(label_set[train_index] - prediction)])#np.array([(prediction)*(1.0 - prediction)*(label_set[train_index] - prediction)])
                 errorMat = error
                 # Backpropogate errors for each layer.
                 for layer_index in range(len(self.layers) - 1, -1, -1):
@@ -92,6 +93,13 @@ class Model:
 
         return pLayerOutput
 
+    def predictAll(self, data):
+        labels = []
+        for entry in data[:]:
+            labels.append(self.predict(entry))
+
+        return np.array(labels)
+
 '''
 
 '''
@@ -111,7 +119,7 @@ class Layer:
     def setParams(self, input_size, size, momemtum=0, learning_rate=0.1, activation_function='sigmoid'):
         # Weight matrix. (# weights or inputs, # neurons). (k x H).
         self.size = size
-        self.input_weights = np.zeros((input_size, size))
+        self.input_weights = np.random.rand(input_size, size)#np.zeros((input_size, size))
         self.input_weight_deltas = np.zeros((input_size, size))
         self.output = np.zeros((size, 1))
         self.momentum = momemtum
@@ -132,7 +140,7 @@ class Layer:
         # Apply sigmoid function, and reset values of output so that mem doesn't have to be allocated.
         for col in range(0, len(output)):
             # Set the output with dim (1 x H) values to the layer's output var with dims (H X 1)
-            output[col] = 1.0 / (1.0 + math.exp(-1 * output[col]))
+            output[col] = 1.0 / (1.0 + math.exp(-1.0 * output[col]))
             # Set the output to the output term that will be used later in backprop.
             self.output[col] = output[col]*(1.0 - output[col])
 
@@ -171,7 +179,7 @@ class Layer:
 
     def generateErrorMat(self, error):
         # Calculate the errorMat to use for backpropagation.
-        errorMat = np.dot(error, self.getInputWeights().T)
+        errorMat = np.dot(error, self.input_weights.T)
         return errorMat
 '''
 Save the model in the specified file path as a pickled object.

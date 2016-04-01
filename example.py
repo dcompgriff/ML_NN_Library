@@ -34,6 +34,26 @@ def buildSmallExampleNet():
     print("Model output is: ")
     print(output)
 
+def calculateAccuracy(ypredicted, yactual):
+    metrics = {}
+    metrics["tp"] = 0
+    metrics["tn"] = 0
+    metrics["fp"] = 0
+    metrics["fn"] = 0
+    for i in range(0, len(yactual)):
+        if ypredicted[i] == 0 and yactual[i] == 0:
+            metrics["tn"] += 1
+        elif ypredicted[i] == 1 and yactual[i] == 0:
+            metrics["fp"] += 1
+        elif ypredicted[i] == 0 and yactual[i] == 1:
+            metrics["fn"] += 1
+        elif ypredicted[i] == 1 and yactual[i] == 1:
+            metrics["tp"] += 1
+
+    accuracy = (metrics["tp"] + metrics["tn"]) / (metrics["tp"] + metrics["tn"] + metrics["fp"] + float(metrics["fn"]))
+
+    return accuracy
+
 def labelToOneHotEncoding(labels):
     uniqueValues = sorted(list(set(labels)))
     newLabels = np.zeros((labels.shape[0], len(uniqueValues)))
@@ -56,8 +76,8 @@ def runNetTrial():
     # Build model.
     mModel = NNModel.Model()
     mModel.add(layer_size=2, learning_rate=.1, isInput=True)
-    mModel.add(layer_size=20, learning_rate=.1, momentum_factor=.3)
-    mModel.add(layer_size=2, learning_rate=.1, momentum_factor=.3)
+    mModel.add(layer_size=20, learning_rate=.1)
+    mModel.add(layer_size=2, learning_rate=.1)
     print("Created Model.")
 
     data = pd.read_table('./hw2_dataProblem.txt', sep=" +", engine='python')
@@ -74,6 +94,7 @@ def runNetTrial():
     testSet = np.vstack((test0, test1))
     np.random.shuffle(testSet)
     trainSet = np.vstack((train0, train1))
+    #trainSet = np.vstack((trainSet, train0))
     np.random.shuffle(trainSet)
 
     testSetData = testSet[:,0:2]
@@ -82,13 +103,24 @@ def runNetTrial():
     trainSetLabels = labelToOneHotEncoding(trainSet[:,2])
 
     print("Starting training.")
-    mModel.train(trainSetData, trainSetLabels, epochs=10)
+    mModel.train(trainSetData, trainSetLabels, epochs=100)
     print("Training finished.")
     # Predict data.
     output = mModel.predict(trainSetData[0])
     output = oneHotEncodingToLabels(np.array([output]))
     print("Model output is: ")
     print(output)
+
+    predictedLabels = mModel.predictAll(trainSetData)
+    predictedLabels = oneHotEncodingToLabels(predictedLabels)
+
+    accuracy = calculateAccuracy(predictedLabels, trainSet[:,2].reshape((len(trainSet), 1)))
+
+    print("Predicted Labels:")
+    print(predictedLabels)
+    print("Accuracy on training set is: ")
+    print(accuracy)
+
 
     print("Finished.")
 
