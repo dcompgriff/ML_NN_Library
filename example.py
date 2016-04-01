@@ -11,6 +11,11 @@ This program shows how to use the NN_library. it
 import numpy as np
 import pandas as pd
 from NN_library import NNModel
+import random
+from sklearn.cross_validation import train_test_split
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
 
 def buildSmallExampleNet():
     # Build model.
@@ -30,13 +35,21 @@ def buildSmallExampleNet():
     print(output)
 
 def labelToOneHotEncoding(labels):
-    uniqueValues = sorted(list(set(labels.T[0])))
+    uniqueValues = sorted(list(set(labels)))
     newLabels = np.zeros((labels.shape[0], len(uniqueValues)))
-    for label_index in range(0, len(labels[:, 0])):
-        value_index = uniqueValues.index(labels[label_index, 0])
+    for label_index in range(0, len(labels[:])):
+        value_index = uniqueValues.index(labels[label_index])
         # Flip the bit corresponding to the position of the element. Values are encoded in descending order.
         # Aka, smalles value is bit in first position, and largest value is bit in last position.
         newLabels[label_index, value_index] = 1
+    return newLabels
+
+def oneHotEncodingToLabels(labels):
+    newLabels = np.zeros((labels.shape[0], 1))
+    for index in range(0, labels.shape[0]):
+        argMax = np.argmax(labels[index])
+        newLabels[index] = np.array([argMax])
+    return newLabels
 
 
 def runNetTrial():
@@ -48,8 +61,38 @@ def runNetTrial():
     print("Created Model.")
 
     data = pd.read_table('./hw2_dataProblem.txt', sep=" +", engine='python')
-    labels = data["D"].values.reshape((300, 1))
-    train_set = data[['L','P']].values
+    #Range scale the P data.
+    data["P"] = data["P"].apply(lambda item: (item - data.P.min()) / (data.P.max() - data.P.min()))
+    #Range scale the L data
+    data["L"] = data["L"].apply(lambda item: (item - data.L.min()) / (data.L.max() - data.L.min()))
+
+    #Split the data into training and test data sets.
+    train0, test0 = train_test_split(data[data.D == 0].values, test_size = 0.2, random_state=random.randint(0, 100000))
+    train1, test1 = train_test_split(data[data.D == 1].values, test_size = 0.2, random_state=random.randint(0, 100000))
+
+    #Combine and shuffle the test and train examples.
+    testSet = np.vstack((test0, test1))
+    np.random.shuffle(testSet)
+    trainSet = np.vstack((train0, train1))
+    np.random.shuffle(trainSet)
+
+    testSetData = testSet[:,0:2]
+    testSetLabels = labelToOneHotEncoding(testSet[:,2])
+    trainSetData = trainSet[:,0:2]
+    trainSetLabels = labelToOneHotEncoding(trainSet[:,2])
+
+    print("Starting training.")
+    mModel.train(trainSetData, trainSetLabels, epochs=10)
+    print("Training finished.")
+    # Predict data.
+    output = mModel.predict(trainSetData[0])
+    output = oneHotEncodingToLabels(np.array([output]))
+    print("Model output is: ")
+    print(output)
+
+    print("Finished.")
+
+
 
 
 def main():
