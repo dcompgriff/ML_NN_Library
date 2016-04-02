@@ -40,8 +40,19 @@ class Model:
     label_set: (m x o) numpy array with m outputs of dimension o
     '''
     def train(self, train_set, label_set, epochs=1):
+        accuracyList = []
+        actualLabels = oneHotEncodingToLabels(train_set)
+
         for epoch in range(0, epochs):
             print("Epoch: " + str(epoch))
+            # Generate the trial wise error and add it to a list to return every 10th epoch.
+            if epoch % 10 == 0:
+                predictedLabels = self.predictAll(train_set)
+                predictedLabels = oneHotEncodingToLabels(predictedLabels)
+                accuracy = calculateAccuracy(predictedLabels, actualLabels)
+                accuracyList.append(1.0 - accuracy)
+
+
             for train_index in range(0, len(train_set[:])):
                 '''
                 1) Predict current example.
@@ -63,6 +74,7 @@ class Model:
                 # Continue to next example.
 
         print("Finished Training.")
+        return accuracyList
 
     '''
     Generate an output prediction from the NN model using the training data and current network weights.
@@ -99,6 +111,53 @@ class Model:
             labels.append(self.predict(entry))
 
         return np.array(labels)
+
+'''
+Convert a one-hot encoding of the classes to a numerical number from 0 to the number of classes - 1.
+'''
+def oneHotEncodingToLabels(labels):
+    newLabels = np.zeros((labels.shape[0], 1))
+    for index in range(0, labels.shape[0]):
+        argMax = np.argmax(labels[index])
+        newLabels[index] = np.array([argMax])
+    return newLabels
+
+'''
+Convert a set of labels into a one-hot encoding with smallest number in bit position 0, and largest
+number in the last bit position.
+'''
+def labelToOneHotEncoding(labels):
+    uniqueValues = sorted(list(set(labels)))
+    newLabels = np.zeros((labels.shape[0], len(uniqueValues)))
+    for label_index in range(0, len(labels[:])):
+        value_index = uniqueValues.index(labels[label_index])
+        # Flip the bit corresponding to the position of the element. Values are encoded in descending order.
+        # Aka, smalles value is bit in first position, and largest value is bit in last position.
+        newLabels[label_index, value_index] = 1
+    return newLabels
+
+'''
+Given a predicted and actual set of labels, determine the accuracy of the list.
+'''
+def calculateAccuracy(ypredicted, yactual):
+    metrics = {}
+    metrics["tp"] = 0
+    metrics["tn"] = 0
+    metrics["fp"] = 0
+    metrics["fn"] = 0
+    for i in range(0, len(yactual)):
+        if ypredicted[i] == 0 and yactual[i] == 0:
+            metrics["tn"] += 1
+        elif ypredicted[i] == 1 and yactual[i] == 0:
+            metrics["fp"] += 1
+        elif ypredicted[i] == 0 and yactual[i] == 1:
+            metrics["fn"] += 1
+        elif ypredicted[i] == 1 and yactual[i] == 1:
+            metrics["tp"] += 1
+
+    accuracy = (metrics["tp"] + metrics["tn"]) / (metrics["tp"] + metrics["tn"] + metrics["fp"] + float(metrics["fn"]))
+
+    return accuracy
 
 '''
 
