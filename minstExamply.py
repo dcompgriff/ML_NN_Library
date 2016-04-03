@@ -286,6 +286,18 @@ def main():
     trainMetrics = NNModel.load('./MINST_MODEL_TRAIN_METRICS.pk')
     testMetrics = NNModel.load('./MINST_MODEL_TEST_METRICS.pk')
     print("Saved and reloaded metrics.")
+    
+    
+    trainA = list(map(lambda item: item['train_accuracy'], trainMetrics['accuracyList']))
+    testA = list(map(lambda item: item['test_accuracy'], trainMetrics['accuracyList']))
+    plt.plot(np.arange(1, 7), testA, label='Test Accuracy')
+    plt.plot(np.arange(1, 7), trainA, label='Train Accuracy')
+    plt.xlabel('epoch % 10')
+    plt.ylabel('Accuracy (fraction predicted correct)')
+    plt.title('Accuracy vs epoch')
+    legend(loc=0)
+    plt.show()
+    
 
     print("End of main.")
 
