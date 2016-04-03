@@ -39,7 +39,7 @@ class Model:
     train_set: (m x k) numpy array with m examples of dimension k
     label_set: (m x o) numpy array with m outputs of dimension o
     '''
-    def train(self, train_set, label_set, epochs=1):
+    def train(self, train_set, label_set, validation_label_set=None,epochs=1):
         accuracyList = []
         actualLabels = oneHotEncodingToLabels(train_set)
 
@@ -50,7 +50,12 @@ class Model:
                 predictedLabels = self.predictAll(train_set)
                 predictedLabels = oneHotEncodingToLabels(predictedLabels)
                 accuracy = calculateAccuracy(predictedLabels, actualLabels)
-                accuracyList.append(1.0 - accuracy)
+                if validation_label_set is None:
+                    accuracyList.append(1.0 - accuracy)
+                else:
+                    # Calculate the accuracy of the network on the validation set.
+                    validationAccuracy = calculateAccuracy(predictedLabels, validation_label_set)
+                    accuracyList.append({'train_accuracy': accuracy, 'test_accuracy': validationAccuracy})
 
 
             for train_index in range(0, len(train_set[:])):
@@ -146,16 +151,12 @@ def calculateAccuracy(ypredicted, yactual):
     metrics["fp"] = 0
     metrics["fn"] = 0
     for i in range(0, len(yactual)):
-        if ypredicted[i] == 0 and yactual[i] == 0:
+        if ypredicted[i] == yactual[i]:
             metrics["tn"] += 1
-        elif ypredicted[i] == 1 and yactual[i] == 0:
-            metrics["fp"] += 1
-        elif ypredicted[i] == 0 and yactual[i] == 1:
-            metrics["fn"] += 1
-        elif ypredicted[i] == 1 and yactual[i] == 1:
+        elif ypredicted[i] == yactual[i]:
             metrics["tp"] += 1
 
-    accuracy = (metrics["tp"] + metrics["tn"]) / (metrics["tp"] + metrics["tn"] + metrics["fp"] + float(metrics["fn"]))
+    accuracy = (metrics["tp"] + metrics["tn"]) / (len(ypredicted))
 
     return accuracy
 
