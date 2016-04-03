@@ -76,9 +76,10 @@ def calculateMetrics(ypredicted, yactual):
 def runNetTrial():
     # Build model.
     mModel = NNModel.Model()
-    mModel.add(layer_size=784, learning_rate=.05, isInput=True)
-    mModel.add(layer_size=150, learning_rate=.05)
-    mModel.add(layer_size=10, learning_rate=.05)
+    mModel.add(layer_size=784, learning_rate=.01, isInput=True)
+    mModel.add(layer_size=100, learning_rate=.01, momentum_factor=0)
+    mModel.add(layer_size=100, learning_rate=.01, momentum_factor=0)
+    mModel.add(layer_size=10, learning_rate=.01, momentum_factor=0)
     print("Created Model.")
 
     # Read data from file.
@@ -98,7 +99,7 @@ def runNetTrial():
     testData = testSet[testSet.columns[:-1]].values
 
     print("Starting training.")
-    trialWiseErrorList = mModel.train(trainData, trainLabels, originalTestLabels, epochs=20)
+    trialWiseErrorList = mModel.train(trainData, trainLabels, validation_data_set=testData, validation_label_set=originalTestLabels, epochs=50)
     print("Training finished.")
 
     # Predict the test set metrics
@@ -112,11 +113,16 @@ def runNetTrial():
     # Predict the train set metrics
     predictedLabels = mModel.predictAll(trainData)
     predictedLabels = NNModel.oneHotEncodingToLabels(predictedLabels)
-    accuracy = NNModel.calculateAccuracy(predictedLabels, trainData)
-    #trainSetMetrics = calculateMetrics(predictedLabels, trainData)
+    accuracy = NNModel.calculateAccuracy(predictedLabels, originalTrainLabels)
+    #trainSetMetrics = calculateMetrics(predictedLabels, originalTrainLabels)
     trainSetMetrics = {}
     trainSetMetrics["accuracy"] = accuracy
     trainSetMetrics["accuracyList"] = trialWiseErrorList
+
+    print("Orig labels: ")
+    print(originalTrainLabels[0:20])
+    print("Pred labels: ")
+    print(predictedLabels[0:20])
 
     return mModel, trainSetMetrics, testSetMetrics
 
@@ -273,6 +279,13 @@ def main():
 
     NNModel.save(mModel, './MINST_MODEL.pk')
     mModel = NNModel.load('./MINST_MODEL.pk')
+
+    print("Saving metrics.")
+    NNModel.save(trainMetrics, './MINST_MODEL_TRAIN_METRICS.pk')
+    NNModel.save(testMetrics, './MINST_MODEL_TEST_METRICS.pk')
+    trainMetrics = NNModel.load('./MINST_MODEL_TRAIN_METRICS.pk')
+    testMetrics = NNModel.load('./MINST_MODEL_TEST_METRICS.pk')
+    print("Saved and reloaded metrics.")
 
     print("End of main.")
 

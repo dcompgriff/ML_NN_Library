@@ -39,26 +39,34 @@ class Model:
     train_set: (m x k) numpy array with m examples of dimension k
     label_set: (m x o) numpy array with m outputs of dimension o
     '''
-    def train(self, train_set, label_set, validation_label_set=None,epochs=1):
+    def train(self, train_set, label_set, validation_data_set=None, validation_label_set=None, epochs=1):
         accuracyList = []
-        actualLabels = oneHotEncodingToLabels(train_set)
 
         for epoch in range(0, epochs):
+            randomIndecies = np.random.random_integers(0, train_set.shape[0] - 1, 2000)#train_set.shape[0])
+            mTrainSet = train_set[randomIndecies]
+            mLabelSet = label_set[randomIndecies]
+            actualLabels = oneHotEncodingToLabels(mLabelSet)
+
             print("Epoch: " + str(epoch))
             # Generate the trial wise error and add it to a list to return every 10th epoch.
             if epoch % 10 == 0:
-                predictedLabels = self.predictAll(train_set)
+                predictedLabels = self.predictAll(mTrainSet)
                 predictedLabels = oneHotEncodingToLabels(predictedLabels)
                 accuracy = calculateAccuracy(predictedLabels, actualLabels)
                 if validation_label_set is None:
                     accuracyList.append(1.0 - accuracy)
                 else:
                     # Calculate the accuracy of the network on the validation set.
+                    predictedLabels = self.predictAll(validation_data_set)
+                    predictedLabels = oneHotEncodingToLabels(predictedLabels)
                     validationAccuracy = calculateAccuracy(predictedLabels, validation_label_set)
                     accuracyList.append({'train_accuracy': accuracy, 'test_accuracy': validationAccuracy})
+                    print("Accuracy: ")
+                    print(accuracyList)
 
 
-            for train_index in range(0, len(train_set[:])):
+            for train_index in range(0, len(mTrainSet[:])):
                 '''
                 1) Predict current example.
                 2) Calculate error for last level.
@@ -68,9 +76,9 @@ class Model:
                     B) Calculate delta wji (With momentum)
                     C) Update weight wji as wji(n) = wji(n-1) + delta wji
                 '''
-                prediction = self.predict(train_set[train_index])
+                prediction = self.predict(mTrainSet[train_index])
                 # Calculate error term for every output neuron. Dims (1 x o)
-                error = np.array([(label_set[train_index] - prediction)])#np.array([(prediction)*(1.0 - prediction)*(label_set[train_index] - prediction)])
+                error = np.array([(mLabelSet[train_index] - prediction)])#np.array([(prediction)*(1.0 - prediction)*(label_set[train_index] - prediction)])
                 errorMat = error
                 # Backpropogate errors for each layer.
                 for layer_index in range(len(self.layers) - 1, -1, -1):
@@ -152,11 +160,9 @@ def calculateAccuracy(ypredicted, yactual):
     metrics["fn"] = 0
     for i in range(0, len(yactual)):
         if ypredicted[i] == yactual[i]:
-            metrics["tn"] += 1
-        elif ypredicted[i] == yactual[i]:
             metrics["tp"] += 1
 
-    accuracy = (metrics["tp"] + metrics["tn"]) / (len(ypredicted))
+    accuracy = (metrics["tp"]) / (len(ypredicted))
 
     return accuracy
 
@@ -179,7 +185,13 @@ class Layer:
     def setParams(self, input_size, size, momemtum=0, learning_rate=0.1, activation_function='sigmoid'):
         # Weight matrix. (# weights or inputs, # neurons). (k x H).
         self.size = size
-        self.input_weights = np.random.rand(input_size, size)#np.zeros((input_size, size))
+        posNegArr = [1, -1]
+        initRandWeights = np.random.rand(input_size, size)
+        for row in range(0, initRandWeights.shape[0]):
+            for col in range(0, initRandWeights.shape[1]):
+                initRandWeights[row, col] = initRandWeights[row, col]*posNegArr[np.random.randint(0, 2)]*0.05
+
+        self.input_weights = initRandWeights#np.random.rand(input_size, size)
         self.input_weight_deltas = np.zeros((input_size, size))
         self.output = np.zeros((size, 1))
         self.momentum = momemtum
