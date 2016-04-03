@@ -77,9 +77,9 @@ def runNetTrial():
     # Build model.
     mModel = NNModel.Model()
     mModel.add(layer_size=784, learning_rate=.01, isInput=True)
-    mModel.add(layer_size=100, learning_rate=.01, momentum_factor=0)
-    mModel.add(layer_size=100, learning_rate=.01, momentum_factor=0)
-    mModel.add(layer_size=10, learning_rate=.01, momentum_factor=0)
+    mModel.add(layer_size=200, learning_rate=.005, momentum_factor=0)
+    mModel.add(layer_size=100, learning_rate=.005, momentum_factor=0)
+    mModel.add(layer_size=10, learning_rate=.005, momentum_factor=0)
     print("Created Model.")
 
     # Read data from file.
@@ -99,7 +99,7 @@ def runNetTrial():
     testData = testSet[testSet.columns[:-1]].values
 
     print("Starting training.")
-    trialWiseErrorList = mModel.train(trainData, trainLabels, validation_data_set=testData, validation_label_set=originalTestLabels, epochs=50)
+    trialWiseErrorList = mModel.train(trainData, trainLabels, validation_data_set=testData, validation_label_set=originalTestLabels, epochs=100)
     print("Training finished.")
 
     # Predict the test set metrics
